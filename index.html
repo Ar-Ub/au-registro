@@ -124,6 +124,11 @@ td:first-child,th:first-child{text-align:left}
 .spark svg{flex:1;height:56px}
 .obs li{margin-bottom:6px;font-size:14px}
 .obs li span{color:var(--soft);font-size:12px}
+#bitList{max-height:460px;overflow:auto}
+.bit{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink)}
+.bit:last-child{border-bottom:0}
+.bit small{display:block;color:var(--soft);font-size:11.5px}
+.ro{display:inline-block;background:var(--goldT);color:#6E5608;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700;margin-left:6px}
 .tip{font-size:12px;color:var(--soft);margin-top:8px}
 .ph{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .ph .nm{flex:1;min-width:0}
@@ -216,6 +221,7 @@ code{background:#EEF0F5;border-radius:5px;padding:1px 5px;font-size:12.5px}
     <h2 data-t="welcome"></h2>
     <p class="muted" data-t="welcomeTxt" style="margin-top:0"></p>
     <div class="row"><button class="btn pri" data-goto="newcat" data-t="createCat"></button><button class="btn" id="bSample0" data-t="loadSample"></button></div>
+    <p class="tip" data-t="welcomeParent"></p><button class="btn sm" id="bRefresh0" data-t="syncNow"></button>
   </div>
 
   <!-- REGISTRAR -->
@@ -253,7 +259,7 @@ code{background:#EEF0F5;border-radius:5px;padding:1px 5px;font-size:12.5px}
 
   <!-- RUTA -->
   <section id="v-ruta" hidden>
-    <div class="card">
+    <div class="card" id="teamCard">
       <div class="row" style="justify-content:space-between;margin-bottom:6px">
         <h2 style="margin:0" data-t="group"></h2>
         <button class="btn sm gold" id="bPdfGroup" data-t="pdfGroup"></button>
@@ -305,7 +311,11 @@ code{background:#EEF0F5;border-radius:5px;padding:1px 5px;font-size:12.5px}
       <div id="syncInfo"></div>
       <div class="row" style="margin-top:10px"><button class="btn pri" id="bSyncNow" data-t="syncNow"></button></div>
     </div>
-    <div class="card">
+    <div class="card" id="bitCard">
+      <div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0" data-t="bitTitle"></h2><button class="btn sm" id="bBit" data-t="bitLoad"></button></div>
+      <div id="bitList" class="muted"></div>
+    </div>
+    <div class="card" id="backupCard">
       <h2 data-t="backup"></h2>
       <p class="muted" style="margin-top:0" data-t="backupTxt"></p>
       <div class="row">
@@ -439,7 +449,13 @@ const TX = {
   pdfIssued:"Emitido", pdfLast:"Último nivel", pdfNoData:"Sin dato", pdfLevels:"Niveles", pdfMatches:"Partidos", pdfDate:"Fecha", pdfOpp:"Rival", pdfRes:"Resultado",
   pdfNoMatches:"Sin partidos registrados.", pdfTests:"Evaluaciones", pdfObs:"Observaciones (lo observado en sesión)", pdfNoObs:"Sin observaciones registradas.",
   pdfFoot1:"Datos observados en sesión. Valorar la tendencia según la etapa evolutiva, no una acción aislada.", pdfPage:"Pág.", fileP:"informe", fileG:"informe-grupo",
-  sampleName:"U6 · Falcons (ejemplo)"
+  sampleName:"U6 · Falcons (ejemplo)",
+  welcomeParent:"¿Eres padre o madre de un jugador? Pídele al entrenador que agregue tu correo en la ficha de tu hijo/a y toca Sincronizar ahora.",
+  famRO:"Vista familia · solo lectura", famTag:"FAMILIA",
+  parentsEmails:"Correos de padres / madres (separados por coma)", parentsPh:"mama@correo.com, papa@correo.com",
+  bitTitle:"Bitácora", bitLoad:"Actualizar", bitEmpty:"Sin movimientos todavía.", bitOffline:"Necesitas conexión para ver la bitácora.",
+  acc:{crear:"Creó",editar:"Editó",borrar:"Borró",entrar:"Entró a la app",salir:"Salió",pdf:"Descargó PDF",pdf_grupo:"Descargó PDF del grupo",exportar:"Exportó respaldo",importar:"Importó datos",ver:"Vio la ruta"},
+  tab:{categorias:"categoría",jugadores:"jugador",actividades:"registro"}, rolP:"padre/madre", rolE:"entrenador"
  },
  en:{
   loginSub:"Your player tracker by age group. Syncs across your devices and works offline.",
@@ -493,7 +509,13 @@ const TX = {
   pdfIssued:"Issued", pdfLast:"Latest level", pdfNoData:"No data", pdfLevels:"Levels", pdfMatches:"Matches", pdfDate:"Date", pdfOpp:"Opponent", pdfRes:"Score",
   pdfNoMatches:"No matches logged.", pdfTests:"Assessments", pdfObs:"Observations (what was seen in session)", pdfNoObs:"No observations logged.",
   pdfFoot1:"Data observed in session. Read the trend in light of the developmental stage, not a single action.", pdfPage:"Page", fileP:"report", fileG:"squad-report",
-  sampleName:"U6 · Falcons (sample)"
+  sampleName:"U6 · Falcons (sample)",
+  welcomeParent:"Are you a player's parent? Ask the coach to add your email to your child's profile, then tap Sync now.",
+  famRO:"Family view · read-only", famTag:"FAMILY",
+  parentsEmails:"Parents' emails (comma-separated)", parentsPh:"mom@email.com, dad@email.com",
+  bitTitle:"Activity log", bitLoad:"Refresh", bitEmpty:"No activity yet.", bitOffline:"You need a connection to see the activity log.",
+  acc:{crear:"Created",editar:"Edited",borrar:"Deleted",entrar:"Signed in",salir:"Signed out",pdf:"Downloaded PDF",pdf_grupo:"Downloaded squad PDF",exportar:"Exported backup",importar:"Imported data",ver:"Viewed progress"},
+  tab:{categorias:"age group",jugadores:"player",actividades:"entry"}, rolP:"parent", rolE:"coach"
  }
 };
 
@@ -504,12 +526,13 @@ const KEY="au-registro-v1", LANG_KEY="au-lang";
 const TABLES=["categorias","jugadores","actividades"];
 const COLS={
   categorias:["id","nombre","club","etapa","escala","semanas","inicio_ciclo","indicadores","contadores","borrado"],
-  jugadores:["id","categoria_id","nombre","edad","pie","posicion","dorsal","borrado"],
+  jugadores:["id","categoria_id","nombre","edad","pie","posicion","dorsal","padres","borrado"],
   actividades:["id","categoria_id","tipo","fecha","semana","tema","rival","goles_favor","goles_contra","test_nombre","test_unidad","test_mejor","registros","borrado"]
 };
-function emptyStore(){ return {session:null,data:{categorias:{},jugadores:{},actividades:{}},outbox:{categorias:{},jugadores:{},actividades:{}},lastPull:{},lastSync:null,cat:null}; }
+function emptyStore(){ return {fam:null,famKid:null,evq:[],session:null,data:{categorias:{},jugadores:{},actividades:{}},outbox:{categorias:{},jugadores:{},actividades:{}},lastPull:{},lastSync:null,cat:null}; }
 let ST = (()=>{ try{ const r=localStorage.getItem(KEY); if(r){ const d=JSON.parse(r); return {...emptyStore(),...d}; } }catch(e){} return emptyStore(); })();
 let LANG = (()=>{ try{ return localStorage.getItem(LANG_KEY)==="en"?"en":"es"; }catch(e){ return "es"; } })();
+ST.evq=ST.evq||[];
 let draft=null, editingId=null, selKid=null, syncing=false, syncErr=null, curTab="reg";
 
 const $=s=>document.querySelector(s);
@@ -529,11 +552,14 @@ function toast(msg){ const el=$("#toast"); el.textContent=msg; el.classList.add(
 function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(ST)); }catch(e){ toast("⚠ Storage"); } }
 
 const live=tb=>Object.values(ST.data[tb]).filter(r=>!r.borrado);
-const cat=()=>ST.data.categorias[ST.cat] && !ST.data.categorias[ST.cat].borrado ? ST.data.categorias[ST.cat] : null;
-const players=()=>live("jugadores").filter(p=>p.categoria_id===ST.cat).sort((a,b)=>(a.dorsal||999)-(b.dorsal||999)||String(a.nombre).localeCompare(b.nombre));
-const acts=()=>live("actividades").filter(a=>a.categoria_id===ST.cat);
+const famKid=()=>ST.famKid&&ST.fam&&(ST.fam.jugadores||[]).find(j=>j.id===ST.famKid)||null;
+const isFam=()=>!!famKid();
+const cat=()=>{ if(isFam()) return (ST.fam.categorias||[]).find(c=>c.id===famKid().categoria_id)||null; const c=ST.data.categorias[ST.cat]; return c&&!c.borrado?c:null; };
+const players=()=>isFam()?[famKid()]:live("jugadores").filter(p=>p.categoria_id===ST.cat).sort((a,b)=>(a.dorsal||999)-(b.dorsal||999)||String(a.nombre).localeCompare(b.nombre));
+const acts=()=>isFam()?(ST.fam.actividades||[]).filter(a=>a.categoria_id===famKid().categoria_id):live("actividades").filter(a=>a.categoria_id===ST.cat);
+function logEvent(accion,resumen,jugador){ ST.evq.push({p_accion:accion,p_resumen:resumen||null,p_jugador:jugador||null}); persist(); scheduleSync(800); }
 const niveles=()=>CONFIG.niveles[cat()?.escala||3];
-const pendingCount=()=>TABLES.reduce((n,tb)=>n+Object.keys(ST.outbox[tb]).length,0);
+const pendingCount=()=>TABLES.reduce((n,tb)=>n+Object.keys(ST.outbox[tb]).length,0)+(ST.evq?ST.evq.length:0);
 
 function putRow(tb,row){
   row._v=(row._v||0)+1;
@@ -570,6 +596,7 @@ async function rest(path, opts={}, retry=true){
 }
 function pick(tb,row){ const o={}; COLS[tb].forEach(c=>{ let v=row[c]; if(v===undefined||v==="") v=null; o[c]=v; });
   if(tb==="jugadores"&&o.nombre===null) o.nombre="";
+  if(tb==="jugadores"&&!Array.isArray(o.padres)) o.padres=[];
   if(o.borrado===null) o.borrado=false;
   if(tb==="actividades"&&!o.registros) o.registros={};
   if(tb==="categorias"){ o.indicadores=o.indicadores||[]; o.contadores=o.contadores||[]; }
@@ -600,6 +627,10 @@ async function sync(){
         ST.lastPull[tb]=since; more=rows.length===1000;
       }
     }
+    while(ST.evq.length){ await rest("rpc/log_evento",{method:"POST",body:JSON.stringify(ST.evq[0])}); ST.evq.shift(); persist(); }
+    ST.fam=await rest("rpc/padre_datos",{method:"POST",body:"{}"});
+    if(ST.famKid&&!famKid()) ST.famKid=null;
+    if(!live("categorias").length&&ST.fam?.jugadores?.length&&!ST.famKid) ST.famKid=ST.fam.jugadores[0].id;
     ST.lastSync=new Date().toISOString();
     if(!cat()){ const c=live("categorias")[0]; ST.cat=c?c.id:null; }
     persist(); renderAll();
@@ -643,7 +674,7 @@ async function finishLogin(j){
     if(pendingCount() && !wipeArmed){ wipeArmed=true; $("#lMsg").textContent=t("otherUser"); $("#lMsg").className="msg err"; return; }
     const lang=LANG; ST=emptyStore(); LANG=lang;
   }
-  wipeArmed=false; setSession(j); $("#login").hidden=true; renderAll(); sync();
+  wipeArmed=false; setSession(j); $("#login").hidden=true; ST.evq.push({p_accion:"entrar",p_resumen:j.user?.email||null,p_jugador:null}); persist(); renderAll(); sync();
 }
 
 /* ============================================================
@@ -696,9 +727,10 @@ function renderHeader(){
   const cs=live("categorias").sort((a,b)=>a.nombre.localeCompare(b.nombre));
   if(ST.cat&&!cat()) ST.cat=null;
   if(!ST.cat&&cs.length) ST.cat=cs[0].id;
-  $("#catSel").innerHTML = cs.length ? cs.map(c=>`<option value="${c.id}" ${c.id===ST.cat?"selected":""}>${esc(c.nombre)}</option>`).join("") : `<option>AU·Registro</option>`;
+  const fk=ST.fam?.jugadores||[], fam=isFam();
+  $("#catSel").innerHTML = (cs.length||fk.length) ? cs.map(c=>`<option value="${c.id}" ${!fam&&c.id===ST.cat?"selected":""}>${esc(c.nombre)}</option>`).join("")+fk.map(k=>`<option value="fam:${k.id}" ${fam&&k.id===ST.famKid?"selected":""}>👪 ${esc(k.nombre)}</option>`).join("") : `<option>AU·Registro</option>`;
   const c=cat();
-  $("#catSub").textContent = c ? t("subLine")(c.club, c.etapa==="formativo"?t("etapaF"):t("etapaC"), c.semanas) : "";
+  $("#catSub").textContent = c ? (fam ? `${c.club?c.club+" · ":""}${c.nombre} · ${t("famRO")}` : t("subLine")(c.club, c.etapa==="formativo"?t("etapaF"):t("etapaC"), c.semanas)) : "";
   document.title = `${c?c.nombre+" — ":""}AU·Registro`;
   $("#noCat").hidden = !!c;
   ["reg","ruta","plantel"].forEach(x=>{ if(!c) $("#v-"+x).hidden=true; });
@@ -707,10 +739,13 @@ function renderHeader(){
 function renderAll(){
   applyStatic(); renderPill(); renderBanner(); renderHeader();
   if(!cat()){ $("#stickyBar").hidden=true; if(curTab!=="ajustes"){ $$("main > section").forEach(s=>s.hidden=true); } else show("ajustes",true); return; }
-  if(!draft||draft.categoria_id!==ST.cat){ draft=newDraft(); editingId=null; }
+  if(!isFam()&&(!draft||draft.categoria_id!==ST.cat)){ draft=newDraft(); editingId=null; }
   show(curTab,true);
 }
 function show(tab,keep){
+  const fam=isFam();
+  if(fam&&(tab==="reg"||tab==="plantel")) tab="ruta";
+  $$("nav button").forEach(b=>b.hidden=fam&&(b.dataset.tab==="reg"||b.dataset.tab==="plantel"));
   curTab=tab;
   $$("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   const hasCat=!!cat();
@@ -823,7 +858,10 @@ function testsFor(pid){
 /* ============================================================
    RUTA
    ============================================================ */
+let famViewed=false;
 function renderRuta(){
+  $("#teamCard").hidden=isFam(); $("#kidChips").hidden=isFam();
+  if(isFam()&&!famViewed){ famViewed=true; logEvent("ver",famKid().nombre,famKid().id); }
   const c=cat(), ps=players(), inds=c.indicadores||[], goles=(c.contadores||[]).find(k=>k.id==="goles");
   $("#teamTbl").innerHTML=`<tr><th>${t("thPlayer")}</th><th>${t("thAtt")}</th>${inds.map(i=>`<th title="${esc(nm(i))}">${esc(i["s_"+LANG]||nm(i).slice(0,4))}</th>`).join("")}${goles?`<th>${esc(goles["s_"+LANG])}</th>`:""}<th class="noprint"></th></tr>`+
     ps.map(p=>{ const a=attendance(p.id), tt=totals(p.id);
@@ -881,6 +919,7 @@ function renderPlantel(){
         <label><span class="plh">${t("colAge")}</span><input class="inp" type="number" min="3" max="40" data-pf="edad" data-p="${p.id}" value="${p.edad??""}"></label>
         <label><span class="plh">${t("colFoot")}</span><select class="inp" data-pf="pie" data-p="${p.id}">${footOpts(p.pie)}</select></label>
       </div>
+      <label style="display:block;margin-top:6px"><span class="plh">${t("parentsEmails")}</span><input class="inp" type="email" multiple data-pf="padres" data-p="${p.id}" value="${esc((p.padres||[]).join(", "))}" placeholder="${esc(t("parentsPh"))}"></label>
     </div>`).join("")||`<p class="muted">${t("emptySquad")}</p>`;
 }
 
@@ -888,8 +927,10 @@ function renderPlantel(){
    AJUSTES
    ============================================================ */
 function renderAjustes(){
-  const c=cat();
-  if(c){
+  const c=cat(), fam=isFam();
+  ["catEdit","newcat","backupCard","bitCard"].forEach(id=>{ if(fam) $("#"+id).hidden=true; });
+  if(!fam){ $("#newcat").hidden=false; $("#backupCard").hidden=false; $("#bitCard").hidden=false; loadBit(); }
+  if(c&&!fam){
     $("#cNombre").value=c.nombre; $("#cClub").value=c.club||""; $("#cEtapa").value=c.etapa==="formativo"?t("etapaF"):t("etapaC");
     $("#cInicio").value=c.inicio_ciclo||""; $("#cSem").value=c.semanas;
     $("#cInd").value=(c.indicadores||[]).map(i=>`${i.es} | ${i.en}`).join("\n");
@@ -897,6 +938,14 @@ function renderAjustes(){
   }
   $("#accEmail").textContent=ST.session?.user?.email||"—";
   renderSyncInfo();
+}
+async function loadBit(){
+  const box=$("#bitList");
+  if(!navigator.onLine||!ST.session||ST.session.needsLogin){ box.textContent=t("bitOffline"); return; }
+  try{
+    const rows=await rest("bitacora?select=ts,email,rol,accion,tabla,resumen&order=ts.desc&limit=60");
+    box.innerHTML = rows.length ? rows.map(b=>`<div class="bit"><b>${esc(t("acc")[b.accion]||b.accion)}</b>${b.tabla?` ${esc(t("tab")[b.tabla]||b.tabla)}`:""}${b.resumen?` · ${esc(b.resumen)}`:""}<small>${new Date(b.ts).toLocaleString(LANG==="en"?"en-US":"es-VE")} · ${esc(b.email||"—")}${b.rol==="padre"?` <span class="ro">${t("rolP")}</span>`:""}</small></div>`).join("") : t("bitEmpty");
+  }catch(e){ box.textContent=e.message; }
 }
 function renderSyncInfo(){
   const st=$("#syncPill").textContent;
@@ -1009,8 +1058,8 @@ function finishPdf(doc){
     doc.text(555,824,`${t("pdfPage")} ${i+1}/${total} · ${CONFIG.coach}`,7,{color:C.soft,align:"right"}); });
   return new Blob([doc.bytes()],{type:"application/pdf"});
 }
-function pdfPlayer(pid){ const p=players().find(x=>x.id===pid); if(!p) return; const d=new PDF(); drawPlayer(d,p); downloadBlob(finishPdf(d),`${t("fileP")}-${slug(p.nombre)}-${today()}.pdf`); }
-function pdfGroup(){ const ps=players(); if(!ps.length){ toast(t("needSquad")); return; } const d=new PDF(); ps.forEach(p=>drawPlayer(d,p)); downloadBlob(finishPdf(d),`${t("fileG")}-${slug(cat().nombre)}-${today()}.pdf`); }
+function pdfPlayer(pid){ const p=players().find(x=>x.id===pid); if(!p) return; logEvent("pdf",p.nombre,p.id); const d=new PDF(); drawPlayer(d,p); downloadBlob(finishPdf(d),`${t("fileP")}-${slug(p.nombre)}-${today()}.pdf`); }
+function pdfGroup(){ const ps=players(); if(!ps.length){ toast(t("needSquad")); return; } logEvent("pdf_grupo",cat().nombre); const d=new PDF(); ps.forEach(p=>drawPlayer(d,p)); downloadBlob(finishPdf(d),`${t("fileG")}-${slug(cat().nombre)}-${today()}.pdf`); }
 async function downloadBlob(blob,name){
   try{ if(window.claude&&window.claude.use){ const dl=await window.claude.use("downloads"); if(dl){ await dl.save({filename:name,data:blob}); if(blob.type==="application/pdf") toast(t("pdfMade")); return; } } }catch(e){ toast(t("dlCancel")); return; }
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);
@@ -1079,7 +1128,7 @@ function importJSON(d){
    ============================================================ */
 $$(".langs").forEach(el=>el.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; LANG=b.dataset.lang; try{ localStorage.setItem(LANG_KEY,LANG); }catch(_){} renderAll(); if(!$("#login").hidden){ applyStatic(); renderLoginMode(); } }));
 $("nav").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b) show(b.dataset.tab); });
-$("#catSel").addEventListener("change",e=>{ ST.cat=e.target.value; persist(); draft=null; selKid=null; renderAll(); });
+$("#catSel").addEventListener("change",e=>{ const v=e.target.value; if(v.startsWith("fam:")){ ST.famKid=v.slice(4); famViewed=false; } else { ST.famKid=null; ST.cat=v; } persist(); draft=null; selKid=null; renderAll(); });
 $("#syncPill").addEventListener("click",()=>{ if(ST.session?.needsLogin||!ST.session) showLogin(true); else { syncErr=null; sync(); } });
 $("#bRelogin").addEventListener("click",()=>showLogin(true));
 $$("[data-goto]").forEach(b=>b.addEventListener("click",()=>{ show("ajustes"); setTimeout(()=>$("#"+b.dataset.goto).scrollIntoView({behavior:"smooth"}),50); }));
@@ -1137,7 +1186,9 @@ $("#bPdfGroup").addEventListener("click",pdfGroup);
 
 $("#plList").addEventListener("change",e=>{
   const el=e.target; if(!el.dataset.pf) return; const p=ST.data.jugadores[el.dataset.p]; if(!p) return;
-  const f=el.dataset.pf; p[f] = (f==="edad"||f==="dorsal") ? (el.value===""?null:+el.value) : el.value;
+  const f=el.dataset.pf;
+  if(f==="padres") p.padres=[...new Set(el.value.split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)))];
+  else p[f] = (f==="edad"||f==="dorsal") ? (el.value===""?null:+el.value) : el.value;
   putRow("jugadores",p);
 });
 $("#plList").addEventListener("click",e=>{
@@ -1166,10 +1217,12 @@ $("#bCatNew").addEventListener("click",()=>{
   createCategory(n,$("#nClub").value.trim(),$("#nEtapa").value); $("#nNombre").value=""; draft=null; curTab="plantel"; renderAll(); toast(t("catCreated"));
 });
 $("#bSyncNow").addEventListener("click",()=>{ syncErr=null; sync(); });
+$("#bRefresh0").addEventListener("click",()=>{ syncErr=null; sync(); });
+$("#bBit").addEventListener("click",loadBit);
 $("#bSample").addEventListener("click",e=>{ const b=e.currentTarget; if(!b.dataset.confirm){ b.dataset.confirm="1"; b.textContent=t("confirmAgain"); setTimeout(()=>{ if(b.dataset.confirm){ delete b.dataset.confirm; b.textContent=t("loadSample"); } },3000); return; } delete b.dataset.confirm; b.textContent=t("loadSample"); loadSample(); });
-$("#bExport").addEventListener("click",()=>{ const data={}; TABLES.forEach(tb=>data[tb]=ST.data[tb]); downloadBlob(new Blob([JSON.stringify({app:"AU-Registro",version:1,exportado:new Date().toISOString(),data},null,2)],{type:"application/json"}),`au-registro-${today()}.json`); });
+$("#bExport").addEventListener("click",()=>{ logEvent("exportar"); const data={}; TABLES.forEach(tb=>data[tb]=ST.data[tb]); downloadBlob(new Blob([JSON.stringify({app:"AU-Registro",version:1,exportado:new Date().toISOString(),data},null,2)],{type:"application/json"}),`au-registro-${today()}.json`); });
 $("#bImport").addEventListener("click",()=>$("#fileIn").click());
-$("#fileIn").addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ try{ importJSON(JSON.parse(rd.result)); draft=null; renderAll(); toast(t("imported")); }catch(err){ toast(t("badFile")); } }; rd.readAsText(f); e.target.value=""; });
+$("#fileIn").addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ try{ importJSON(JSON.parse(rd.result)); logEvent("importar",f.name); draft=null; renderAll(); toast(t("imported")); }catch(err){ toast(t("badFile")); } }; rd.readAsText(f); e.target.value=""; });
 $("#bLogout").addEventListener("click",e=>{
   const b=e.currentTarget;
   if(pendingCount()&&!b.dataset.confirm){ b.dataset.confirm="1"; toast(t("logoutPend")); setTimeout(()=>delete b.dataset.confirm,4000); return; }
