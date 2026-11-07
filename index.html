@@ -140,6 +140,12 @@ td:first-child,th:first-child{text-align:left}
 .tact i{font-style:normal;opacity:.65;font-size:15px}
 .tact:active{transform:scale(.97)}
 .tacts.off .tact{opacity:.45}
+.trows{margin-bottom:10px}
+.trow{display:grid;grid-template-columns:minmax(0,1fr) 88px 88px;gap:6px;align-items:center;margin-bottom:6px}
+.trow.h{margin-bottom:2px}.trow.h span{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);text-align:center}
+.trow > span:first-child{font-size:13.5px;font-weight:700;text-align:left!important}
+.trow .tact{min-height:44px;justify-content:center;align-items:center;font-size:20px;padding:6px}
+.tstat{text-align:center;font-size:18px;font-weight:800;color:var(--soft);border:1px dashed var(--line);border-radius:10px;padding:9px 0}
 .tsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin:6px 0 10px}
 .tsum div{border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
 .tsum b{display:block;font-size:20px;color:var(--navy)} .tsum span{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--soft);font-weight:700}
@@ -503,7 +509,9 @@ const TX = {
   acc:{crear:"Creó",editar:"Editó",borrar:"Borró",entrar:"Entró a la app",salir:"Salió",pdf:"Descargó PDF",pdf_grupo:"Descargó PDF del grupo",exportar:"Exportó respaldo",importar:"Importó datos",ver:"Vio la ruta"},
   tab:{categorias:"categoría",jugadores:"jugador",actividades:"registro"}, rolP:"padre/madre", rolE:"entrenador",
   tagTitle:"⚡ Etiquetador AU·Stats", tagSub:"Toca un jugador y luego la acción. Cada etiqueta queda guardada con su minuto.", tagShow:"Abrir", tagHide:"Ocultar",
-  tg:{pase_ok:"Pase completado",pase_ko:"Pase fallado",gol:"Gol",rec:"Recuperación",f_com:"Falta cometida",f_rec:"Falta recibida",cor_favor:"Córner a favor",riv_corner:"Córner rival",riv_gol:"Gol rival"},
+  tg:{pase_ok:"Pase completado",pase_ko:"Pase fallado",gol:"Gol",rec:"Recuperación",r_puerta:"Remate a portería",r_fuera:"Remate desviado",f_com:"Falta cometida",f_rec:"Falta recibida",cor_favor:"Córner a favor",riv_corner:"Córner rival",sp_favor:"Saque de portería a favor",riv_sp:"Saque de portería rival",sb_favor:"Saque de banda a favor",riv_sb:"Saque de banda rival",riv_rem_p:"Remate rival a portería",riv_gol:"Gol rival"},
+  us:"Nosotros", them:"Rival", rowLbl:{cor:"Córner",sp:"Saque de portería",sb:"Saque de banda",remp:"Remate a portería",golr:"Gol"},
+  sRem:"Remates", aPort:"a portería", remLbl:"A port. / remates", rivPort:"Rival a portería",
   tagTeam:"Equipo y rival", tagPick:"Primero toca un jugador presente", clkStart:"▶ Iniciar reloj", clkPause:"⏸ Pausar", clk2:"Inicio 2T", dur:"Duración", undo:"↶ Deshacer última", tagNone:"Sin etiquetas todavía.",
   sPases:"Pases", sRec:"Recuperaciones", sFC:"Faltas com.", sFR:"Faltas rec.", sCor:"Córners", sGol:"Goles",
   stTitle:"AU·Stats", stTip:"Datos del etiquetador en vivo. % = pases completados sobre pases intentados.", pdfStats:"AU·Stats (etiquetador)",
@@ -573,7 +581,9 @@ const TX = {
   acc:{crear:"Created",editar:"Edited",borrar:"Deleted",entrar:"Signed in",salir:"Signed out",pdf:"Downloaded PDF",pdf_grupo:"Downloaded squad PDF",exportar:"Exported backup",importar:"Imported data",ver:"Viewed progress"},
   tab:{categorias:"age group",jugadores:"player",actividades:"entry"}, rolP:"parent", rolE:"coach",
   tagTitle:"⚡ AU·Stats tagger", tagSub:"Tap a player, then the action. Every tag is saved with its minute.", tagShow:"Open", tagHide:"Hide",
-  tg:{pase_ok:"Completed pass",pase_ko:"Missed pass",gol:"Goal",rec:"Ball recovery",f_com:"Foul committed",f_rec:"Foul won",cor_favor:"Corner for",riv_corner:"Opponent corner",riv_gol:"Opponent goal"},
+  tg:{pase_ok:"Completed pass",pase_ko:"Missed pass",gol:"Goal",rec:"Ball recovery",r_puerta:"Shot on target",r_fuera:"Shot off target",f_com:"Foul committed",f_rec:"Foul won",cor_favor:"Corner for",riv_corner:"Opponent corner",sp_favor:"Goal kick for",riv_sp:"Opponent goal kick",sb_favor:"Throw-in for",riv_sb:"Opponent throw-in",riv_rem_p:"Opponent shot on target",riv_gol:"Opponent goal"},
+  us:"Us", them:"Opponent", rowLbl:{cor:"Corner",sp:"Goal kick",sb:"Throw-in",remp:"Shot on target",golr:"Goal"},
+  sRem:"Shots", aPort:"on target", remLbl:"On tgt / shots", rivPort:"Opp. on target",
   tagTeam:"Team & opponent", tagPick:"First tap a player who is present", clkStart:"▶ Start clock", clkPause:"⏸ Pause", clk2:"2nd half", dur:"Length", undo:"↶ Undo last", tagNone:"No tags yet.",
   sPases:"Passes", sRec:"Recoveries", sFC:"Fouls comm.", sFR:"Fouls won", sCor:"Corners", sGol:"Goals",
   stTitle:"AU·Stats", stTip:"Live tagger data. % = completed passes over attempted passes.", pdfStats:"AU·Stats (tagger)",
@@ -889,8 +899,10 @@ function renderKids(){
   }).join("");
 }
 /* ---------- ETIQUETADOR AU·Stats ---------- */
-const TAG_P=[["pase_ok","g"],["pase_ko","b"],["gol","g"],["rec","g"],["f_com","b"],["f_rec","g"]];
-const TAG_E=[["cor_favor","g"],["riv_corner",""],["riv_gol","b"]];
+const TAG_P=[["pase_ok","g"],["pase_ko","b"],["rec","g"],["r_puerta","g"],["r_fuera",""],["gol","g"],["f_com","b"],["f_rec","g"]];
+const TEAM_ROWS=[["cor",["cor_favor","riv_corner"],["g",""]],["sp",["sp_favor","riv_sp"],["",""]],["sb",["sb_favor","riv_sb"],["",""]],["remp",[null,"riv_rem_p"],["","b"]],["golr",[null,"riv_gol"],["","b"]]];
+const TAG_E=TEAM_ROWS.flatMap(r=>r[1].filter(Boolean).map(k=>[k]));
+const SHOT=new Set(["r_puerta","r_fuera","gol"]);
 let tagSel=null, tagOpen=true;
 const rl=()=>draft.reloj||(draft.reloj={t:0,run:false,since:0});
 const clockSecs=()=>{ const c=rl(); return c.t+(c.run?(Date.now()-c.since)/1000:0); };
@@ -916,24 +928,29 @@ function renderTagger(){
     <div class="tchips">${ps.map(p=>`<button class="tchip ${tagSel===p.id?"on":""}" data-tg="sel" data-p="${p.id}"><b>${esc(p.dorsal||initials(p.nombre))}</b><span>${esc(p.nombre||"—")}</span></button>`).join("")||`<p class="muted">${t("noPlayers")}</p>`}</div>
     <div class="tacts ${tagSel?"":"off"}">${TAG_P.map(([a,c])=>`<button class="tact ${c}" data-tg="act" data-a="${a}"><span>${t("tg")[a]}</span><i>${tagSel?(tagCount(tagSel,a)||""):""}</i></button>`).join("")}</div>
     <span class="plh">${t("tagTeam")}</span>
-    <div class="tacts">${TAG_E.map(([a,c])=>`<button class="tact ${c}" data-tg="act" data-a="${a}"><span>${t("tg")[a]}</span><i>${team(a)||""}</i></button>`).join("")}</div>
+    <div class="trows"><div class="trow h"><span></span><span>${t("us")}</span><span>${t("them")}</span></div>
+      ${TEAM_ROWS.map(([k,keys,cls])=>{ const ours={remp:all("r_puerta")+all("gol"),golr:all("gol")}[k];
+        return `<div class="trow"><span>${t("rowLbl")[k]}</span>${keys.map((a,i)=>a?`<button class="tact ${cls[i]}" data-tg="act" data-a="${a}" title="${esc(t("tg")[a])}">${team(a)}</button>`:`<span class="tstat" title="${esc(t("tagTeam"))}">${ours}</span>`).join("")}</div>`; }).join("")}
+    </div>
     <div class="tsum">
       <div><b>${all("pase_ok")}/${pt}</b><span>${t("sPases")}${pp!=null?" · "+pp+"%":""}</span></div>
       <div><b>${all("gol")}–${team("riv_gol")}</b><span>${t("sGol")}</span></div>
+      <div><b>${all("r_puerta")+all("gol")}/${all("r_puerta")+all("r_fuera")+all("gol")}</b><span>${t("sRem")} · ${t("aPort")}</span></div>
       <div><b>${all("rec")}</b><span>${t("sRec")}</span></div>
       <div><b>${all("f_com")}/${all("f_rec")}</b><span>${t("sFC")} / ${t("sFR")}</span></div>
-      <div><b>${team("cor_favor")}–${team("riv_corner")}</b><span>${t("sCor")}</span></div>
     </div>
     <div class="row" style="justify-content:space-between"><span class="plh" style="margin:0">${ev.length} tags</span><button class="btn sm" data-tg="undo" ${ev.length?"":"disabled"}>${t("undo")}</button></div>
     ${last.length?`<ul class="tfeed">${last.map(e=>`<li><span class="m">${evMin(e)}'</span><span>${e.p==="EQ"?"":`<b>${esc(nmOf(e.p))}</b> · `}${t("tg")[e.a]}</span></li>`).join("")}</ul>`:`<p class="muted">${t("tagNone")}</p>`}`;
 }
 function syncScore(){ $("#fGF").value=draft.goles_favor??""; $("#fGC").value=draft.goles_contra??""; }
-function hasGolesCnt(){ return (cat()?.contadores||[]).some(k=>k.id==="goles"); }
+function hasGolesCnt(){ return hasCnt("goles"); }
+function hasCnt(id){ return (cat()?.contadores||[]).some(k=>k.id===id); }
 function tagAct(a){
   const isTeam=TAG_E.some(x=>x[0]===a), pid=isTeam?"EQ":tagSel;
   if(!pid){ toast(t("tagPick")); return; }
   const e={id:Math.random().toString(36).slice(2,8),s:Math.floor(clockSecs()),p:pid,a};
   (draft.eventos=draft.eventos||[]).push(e);
+  if(SHOT.has(a)&&hasCnt("remates")){ const r=reg(pid); r.cnt=r.cnt||{}; r.cnt.remates=(r.cnt.remates||0)+1; if(a!=="gol") renderKids(); }
   if(a==="gol"){ const r=reg(pid); r.cnt=r.cnt||{}; if(hasGolesCnt()) r.cnt.goles=(r.cnt.goles||0)+1; draft.goles_favor=(draft.goles_favor||0)+1; syncScore(); renderKids(); }
   if(a==="riv_gol"){ draft.goles_contra=(draft.goles_contra||0)+1; syncScore(); }
   toast(`${evMin(e)}' · ${pid==="EQ"?"":(players().find(p=>p.id===pid)?.nombre+" · ")}${t("tg")[a]}`);
@@ -942,6 +959,7 @@ function tagAct(a){
 }
 function tagUndo(){
   const e=(draft.eventos||[]).pop(); if(!e) return;
+  if(SHOT.has(e.a)&&hasCnt("remates")){ const r=reg(e.p); if(r.cnt?.remates) r.cnt.remates--; renderKids(); }
   if(e.a==="gol"){ const r=reg(e.p); if(r.cnt?.goles) r.cnt.goles--; if(draft.goles_favor) draft.goles_favor--; syncScore(); renderKids(); }
   if(e.a==="riv_gol"&&draft.goles_contra){ draft.goles_contra--; syncScore(); }
   saveDraft(); renderTagger();
@@ -962,9 +980,12 @@ setInterval(()=>{ const el=$("#tagClock"); if(el&&draft&&draft.reloj?.run) el.te
 
 /* ---------- FICHAS DEL PARTIDO ---------- */
 let FM={id:null,pid:null};
+function teamLine(a){ const ev=a.eventos||[], n=k=>ev.filter(e=>e.a===k).length;
+  if(!ev.some(e=>e.p==="EQ")) return "";
+  return [["cor","cor_favor","riv_corner"],["sb","sb_favor","riv_sb"],["sp","sp_favor","riv_sp"]].filter(([,x,y])=>n(x)+n(y)).map(([k,x,y])=>`${t("rowLbl")[k]}: ${n(x)}–${n(y)}`).join("  ·  "); }
 function fichaData(a,pid){
   const r=a.registros?.[pid]||null, ev=a.eventos||[], mine=ev.filter(e=>e.p===pid).sort((x,y)=>x.s-y.s);
-  const c={pase_ok:0,pase_ko:0,gol:0,rec:0,f_com:0,f_rec:0}; mine.forEach(e=>{ if(e.a in c) c[e.a]++; });
+  const c={pase_ok:0,pase_ko:0,gol:0,rec:0,r_puerta:0,r_fuera:0,f_com:0,f_rec:0}; mine.forEach(e=>{ if(e.a in c) c[e.a]++; });
   return {r,tagged:ev.length>0,c,mine,absent:!r||r.asis==="A"};
 }
 function openFichas(actId,pid){
@@ -985,12 +1006,12 @@ function renderFichas(){
   const meta=[p.dorsal?"#"+p.dorsal:"",posTxt(p.posicion),p.edad?`${p.edad} ${t("years")}`:"",p.pie?footTxt(p.pie):""].filter(Boolean).join(" · ");
   const score=a.goles_favor!=null&&a.goles_contra!=null?`${a.goles_favor}–${a.goles_contra}`:"—";
   let h=`<div class="card"><div class="ph"><div class="av">${esc(p.dorsal||initials(p.nombre))}</div><div class="nm"><h3>${esc(p.nombre)}</h3><span class="muted">${esc(meta)}</span></div></div>
-    <div class="fscore"><b>${score}</b><span>vs ${esc(a.rival||"—")} · ${fmtFull(a.fecha)}${a.tema?` · ${esc(a.tema)}`:""}</span></div>`;
+    <div class="fscore"><b>${score}</b><span>vs ${esc(a.rival||"—")} · ${fmtFull(a.fecha)}${a.tema?` · ${esc(a.tema)}`:""}${teamLine(a)?`<br>${esc(teamLine(a))}`:""}</span></div>`;
   if(d.absent){ $("#fmBody").innerHTML=h+`<p class="muted" style="margin:0">${t("absentTxt")}</p></div>`; return; }
   const pt=d.c.pase_ok+d.c.pase_ko;
   h+=`<h2>${t("stTitle")}</h2>`+(!d.tagged?`<p class="muted">${t("notTagged")}</p>`:
-    `<div class="kpis"><div class="kpi"><b>${d.c.pase_ok}/${pt}</b><span>${t("sPases")}${pt?" · "+Math.round(d.c.pase_ok/pt*100)+"%":""}</span></div><div class="kpi"><b>${d.c.gol}</b><span>${t("sGol")}</span></div><div class="kpi"><b>${d.c.rec}</b><span>${t("sRec")}</span></div><div class="kpi"><b>${d.c.f_com}</b><span>${t("sFC")}</span></div><div class="kpi"><b>${d.c.f_rec}</b><span>${t("sFR")}</span></div></div>`);
-  const ks=(c.contadores||[]).filter(k=>!(d.tagged&&k.id==="goles"));
+    `<div class="kpis"><div class="kpi"><b>${d.c.pase_ok}/${pt}</b><span>${t("sPases")}${pt?" · "+Math.round(d.c.pase_ok/pt*100)+"%":""}</span></div><div class="kpi"><b>${d.c.gol}</b><span>${t("sGol")}</span></div><div class="kpi"><b>${d.c.r_puerta+d.c.gol}/${d.c.r_puerta+d.c.r_fuera+d.c.gol}</b><span>${t("sRem")} · ${t("aPort")}</span></div><div class="kpi"><b>${d.c.rec}</b><span>${t("sRec")}</span></div><div class="kpi"><b>${d.c.f_com}</b><span>${t("sFC")}</span></div><div class="kpi"><b>${d.c.f_rec}</b><span>${t("sFR")}</span></div></div>`);
+  const ks=(c.contadores||[]).filter(k=>!(d.tagged&&(k.id==="goles"||k.id==="remates")));
   if(ks.length) h+=`<h2>${t("counters")}</h2><div class="kpis">${ks.map(k=>`<div class="kpi"><b>${d.r.cnt?.[k.id]||0}</b><span>${esc(nm(k))}</span></div>`).join("")}</div>`;
   h+=`<h2>${t("indDay")}</h2>`+(c.indicadores||[]).map(i=>{ const v=d.r.ind?.[i.id], L=v?nv.find(n=>n.v===v):null;
     return `<div class="lvrow"><span>${esc(nm(i))}</span>${L?`<span class="lvpill" style="background:${L.color}">${L.emoji?L.emoji+" ":""}${c.escala===5?L.v+" · ":""}${esc(nm(L))}</span>`:`<span class="lvpill no">${t("notObs")}</span>`}</div>`; }).join("");
@@ -1010,16 +1031,16 @@ function drawFicha(doc,a,p){
   doc.circle(528,48,24,C.navy2,C.gold); doc.text(528,55,String(p.dorsal||initials(p.nombre)),16,{bold:true,color:C.gold2,align:"center"});
   y=118; doc.rect(M,y,R-M,40,"#F6EED3");
   doc.text(M+14,y+27,a.goles_favor!=null&&a.goles_contra!=null?`${a.goles_favor} – ${a.goles_contra}`:"—",20,{bold:true,color:C.navy});
-  doc.text(M+100,y+18,fit(`vs ${a.rival||"—"}`,11,380,true),11,{bold:true}); doc.text(M+100,y+32,fit(a.tema||"",8.5,380),8.5,{color:C.soft});
+  doc.text(M+100,y+18,fit(`vs ${a.rival||"—"}`,11,380,true),11,{bold:true}); doc.text(M+100,y+32,fit([a.tema,teamLine(a)].filter(Boolean).join("  ·  "),8.5,400),8.5,{color:C.soft});
   y=180;
   const meta=[`${t("pdfAge")}: ${p.edad?p.edad+" "+t("years"):"—"}`,`${t("pdfFoot")}: ${footTxt(p.pie)}`,c.etapa==="competicion"?`${t("pdfPos")}: ${posTxt(p.posicion)||"—"}`:null].filter(Boolean).join("    ·    ");
   doc.text(M,y,meta,10); y+=24;
   if(d.absent){ doc.text(M,y,t("absentTxt"),11,{bold:true,color:"#B3412E"}); return; }
   section(t("stTitle"));
   if(!d.tagged){ doc.text(M,y,t("notTagged"),9.5,{color:C.soft}); y+=18; }
-  else{ const pt=d.c.pase_ok+d.c.pase_ko, kp=[[`${d.c.pase_ok}/${pt}`,`${t("sPases")}${pt?" · "+Math.round(d.c.pase_ok/pt*100)+"%":""}`],[String(d.c.gol),t("sGol")],[String(d.c.rec),t("sRec")],[String(d.c.f_com),t("sFC")],[String(d.c.f_rec),t("sFR")]];
-    const bw=(R-M-4*8)/5; kp.forEach((k,i)=>{ const x=M+i*(bw+8); doc.rect(x,y,bw,48,C.navy); doc.text(x+bw/2,y+25,k[0],18,{bold:true,color:C.gold2,align:"center"}); doc.text(x+bw/2,y+40,fit(k[1].toUpperCase(),7,bw-6,true),7,{bold:true,color:C.pale,align:"center"}); }); y+=66; }
-  const ks=(c.contadores||[]).filter(k=>!(d.tagged&&k.id==="goles"));
+  else{ const pt=d.c.pase_ok+d.c.pase_ko, kp=[[`${d.c.pase_ok}/${pt}`,`${t("sPases")}${pt?" · "+Math.round(d.c.pase_ok/pt*100)+"%":""}`],[String(d.c.gol),t("sGol")],[`${d.c.r_puerta+d.c.gol}/${d.c.r_puerta+d.c.r_fuera+d.c.gol}`,t("remLbl")],[String(d.c.rec),t("sRec")],[String(d.c.f_com),t("sFC")],[String(d.c.f_rec),t("sFR")]];
+    const bw=(R-M-(kp.length-1)*8)/kp.length; kp.forEach((k,i)=>{ const x=M+i*(bw+8); doc.rect(x,y,bw,48,C.navy); doc.text(x+bw/2,y+25,k[0],18,{bold:true,color:C.gold2,align:"center"}); doc.text(x+bw/2,y+40,fit(k[1].toUpperCase(),7,bw-6,true),7,{bold:true,color:C.pale,align:"center"}); }); y+=66; }
+  const ks=(c.contadores||[]).filter(k=>!(d.tagged&&(k.id==="goles"||k.id==="remates")));
   if(ks.length){ section(t("counters"));
     doc.text(M,y,ks.map(k=>`${nm(k)}: ${d.r.cnt?.[k.id]||0}`).join("     ·     "),10,{bold:true}); y+=22; }
   section(t("indDay"));
@@ -1078,9 +1099,9 @@ function recentAvg(pid,indId){ const wa=weekAvg(pid,indId); const ws=Object.keys
 function lastWeekVal(pid,indId){ const wa=weekAvg(pid,indId); const ws=Object.keys(wa).map(Number); return ws.length?wa[Math.max(...ws)]:null; }
 function attendance(pid){ const rs=acts().filter(a=>a.tipo!=="T").map(a=>a.registros?.[pid]).filter(Boolean); return {p:rs.filter(r=>r.asis==="P").length,t:rs.length}; }
 function totals(pid){ const o={}; (cat().contadores||[]).forEach(k=>o[k.id]=0); acts().forEach(a=>{ const r=a.registros?.[pid]; if(a.tipo==="P"&&r?.cnt) for(const k in r.cnt) o[k]=(o[k]||0)+(+r.cnt[k]||0); }); return o; }
-function tagTotals(pid){ const o={pase_ok:0,pase_ko:0,gol:0,rec:0,f_com:0,f_rec:0,n:0};
+function tagTotals(pid){ const o={pase_ok:0,pase_ko:0,gol:0,rec:0,r_puerta:0,r_fuera:0,f_com:0,f_rec:0,n:0};
   acts().forEach(a=>(a.eventos||[]).forEach(e=>{ if(e.p===pid&&e.a in o){ o[e.a]++; o.n++; } })); return o; }
-function tagByMatch(pid){ return acts().filter(a=>a.tipo==="P"&&(a.eventos||[]).some(e=>e.p===pid)).sort((x,y)=>x.fecha.localeCompare(y.fecha)).map(a=>{ const o={a,pase_ok:0,pase_ko:0,gol:0,rec:0,f_com:0,f_rec:0}; a.eventos.forEach(e=>{ if(e.p===pid&&e.a in o) o[e.a]++; }); return o; }); }
+function tagByMatch(pid){ return acts().filter(a=>a.tipo==="P"&&(a.eventos||[]).some(e=>e.p===pid)).sort((x,y)=>x.fecha.localeCompare(y.fecha)).map(a=>{ const o={a,pase_ok:0,pase_ko:0,gol:0,rec:0,r_puerta:0,r_fuera:0,f_com:0,f_rec:0}; a.eventos.forEach(e=>{ if(e.p===pid&&e.a in o) o[e.a]++; }); return o; }); }
 function testsFor(pid){
   const by={};
   acts().filter(a=>a.tipo==="T"&&a.test_nombre).sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(a=>{
@@ -1135,9 +1156,9 @@ function renderKidDetail(){
     </div>
     ${(()=>{ const s=tagTotals(p.id); if(!s.n) return ""; const pt=s.pase_ok+s.pase_ko, pp=pt?Math.round(s.pase_ok/pt*100):null, ms=tagByMatch(p.id);
       return `<div class="card"><h2>${t("stTitle")}</h2>
-        <div class="kpis"><div class="kpi"><b>${s.pase_ok}/${pt}</b><span>${t("sPases")}${pp!=null?" · "+pp+"%":""}</span></div><div class="kpi"><b>${s.gol}</b><span>${t("sGol")}</span></div><div class="kpi"><b>${s.rec}</b><span>${t("sRec")}</span></div><div class="kpi"><b>${s.f_com}</b><span>${t("sFC")}</span></div><div class="kpi"><b>${s.f_rec}</b><span>${t("sFR")}</span></div></div>
-        <table><tr><th>${t("fecha")}</th><th>${t("rival")}</th><th>${t("sPases")}</th><th>${t("sGol")}</th><th>Rec</th><th>FC</th><th>FR</th></tr>
-        ${ms.map(m=>{ const q=m.pase_ok+m.pase_ko; return `<tr><td>${fmtDate(m.a.fecha)}</td><td>${esc(m.a.rival||"—")}</td><td>${m.pase_ok}/${q}${q?` (${Math.round(m.pase_ok/q*100)}%)`:""}</td><td>${m.gol}</td><td>${m.rec}</td><td>${m.f_com}</td><td>${m.f_rec}</td></tr>`; }).join("")}</table>
+        <div class="kpis"><div class="kpi"><b>${s.pase_ok}/${pt}</b><span>${t("sPases")}${pp!=null?" · "+pp+"%":""}</span></div><div class="kpi"><b>${s.gol}</b><span>${t("sGol")}</span></div><div class="kpi"><b>${s.r_puerta+s.gol}/${s.r_puerta+s.r_fuera+s.gol}</b><span>${t("sRem")} · ${t("aPort")}</span></div><div class="kpi"><b>${s.rec}</b><span>${t("sRec")}</span></div><div class="kpi"><b>${s.f_com}</b><span>${t("sFC")}</span></div><div class="kpi"><b>${s.f_rec}</b><span>${t("sFR")}</span></div></div>
+        <table><tr><th>${t("fecha")}</th><th>${t("rival")}</th><th>${t("sPases")}</th><th>${t("sGol")}</th><th>${t("sRem")}</th><th>Rec</th><th>FC</th><th>FR</th></tr>
+        ${ms.map(m=>{ const q=m.pase_ok+m.pase_ko; return `<tr><td>${fmtDate(m.a.fecha)}</td><td>${esc(m.a.rival||"—")}</td><td>${m.pase_ok}/${q}${q?` (${Math.round(m.pase_ok/q*100)}%)`:""}</td><td>${m.gol}</td><td>${m.r_puerta+m.gol}/${m.r_puerta+m.r_fuera+m.gol}</td><td>${m.rec}</td><td>${m.f_com}</td><td>${m.f_rec}</td></tr>`; }).join("")}</table>
         <div class="tip">${t("stTip")}</div></div>`; })()}
     ${ts.length?`<div class="card"><h2>${t("tests")}</h2><table><tr><th>${t("testName")}</th><th>${t("tLast")}</th><th>${t("tBest")}</th><th>${t("tN")}</th></tr>
       ${ts.map(x=>`<tr><td><b>${esc(x.nombre)}</b></td><td>${x.last} ${esc(x.unidad)}</td><td>${x.best} ${esc(x.unidad)}</td><td>${x.vals.length}</td></tr>`).join("")}</table></div>`:""}
@@ -1277,11 +1298,11 @@ function drawPlayer(doc,p){
   const st=tagTotals(p.id);
   if(st.n){ section(t("pdfStats"));
     const pt=st.pase_ok+st.pase_ko, pp=pt?Math.round(st.pase_ok/pt*100):null;
-    doc.text(M,y,`${t("sPases")}: ${st.pase_ok}/${pt}${pp!=null?` (${pp}%)`:""}    ·    ${t("sGol")}: ${st.gol}    ·    ${t("sRec")}: ${st.rec}    ·    ${t("sFC")}: ${st.f_com}    ·    ${t("sFR")}: ${st.f_rec}`,9.5,{bold:true}); y+=16;
-    const xs=[M,M+52,300,370,415,460,505];
-    [t("pdfDate"),t("pdfOpp"),t("sPases"),t("sGol"),"Rec","FC","FR"].forEach((h,i)=>doc.text(xs[i],y,h.toUpperCase(),7.5,{bold:true,color:C.soft})); y+=13;
+    doc.text(M,y,`${t("sPases")}: ${st.pase_ok}/${pt}${pp!=null?` (${pp}%)`:""}    ·    ${t("sGol")}: ${st.gol}    ·    ${t("sRem")}: ${st.r_puerta+st.gol}/${st.r_puerta+st.r_fuera+st.gol} ${t("aPort")}    ·    ${t("sRec")}: ${st.rec}    ·    ${t("sFC")}: ${st.f_com}    ·    ${t("sFR")}: ${st.f_rec}`,9.5,{bold:true}); y+=16;
+    const xs=[M,M+52,270,335,375,430,470,510];
+    [t("pdfDate"),t("pdfOpp"),t("sPases"),t("sGol"),t("sRem"),"Rec","FC","FR"].forEach((h,i)=>doc.text(xs[i],y,h.toUpperCase(),7.5,{bold:true,color:C.soft})); y+=13;
     tagByMatch(p.id).forEach((m,i)=>{ ensure(16); if(i%2===0) doc.rect(M-4,y-11,R-M+8,15,"#F4F5F8"); const q=m.pase_ok+m.pase_ko;
-      [fmtDate(m.a.fecha),fit(m.a.rival||"—",9,240),`${m.pase_ok}/${q}${q?` ${Math.round(m.pase_ok/q*100)}%`:""}`,String(m.gol),String(m.rec),String(m.f_com),String(m.f_rec)].forEach((v,j)=>doc.text(xs[j],y,v,9,{bold:j===0})); y+=15; });
+      [fmtDate(m.a.fecha),fit(m.a.rival||"—",9,200),`${m.pase_ok}/${q}${q?` ${Math.round(m.pase_ok/q*100)}%`:""}`,String(m.gol),`${m.r_puerta+m.gol}/${m.r_puerta+m.r_fuera+m.gol}`,String(m.rec),String(m.f_com),String(m.f_rec)].forEach((v,j)=>doc.text(xs[j],y,v,9,{bold:j===0})); y+=15; });
     y+=8; }
   section(t("pdfMatches"));
   const ms=acts().filter(s=>s.tipo==="P"&&s.registros?.[p.id]).sort((q,r)=>q.fecha.localeCompare(r.fecha));
